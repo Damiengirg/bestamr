@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="description" content="bestam'R — Streetwear authentique. T-shirts, hoodies, masques, cagoules avec logo bestam'R."/>
+  <title>bestam'R — Streetwear Authentique</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;500;700&display=swap" rel="stylesheet"/>
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    :root {
+      --bg: #080808;
+      --surface: #111111;
+      --surface2: #181818;
+      --border: #222222;
+      --white: #F2EFE9;
+      --muted: rgba(242,239,233,0.45);
+      --gold: #C9A84C;
+      --gold2: #8B6914;
+      --red: #C0392B;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'Syne', sans-serif;
+      font-weight: 400;
+      overflow-x: hidden;
+    }
+    a { text-decoration: none; color: inherit; }
+    button { font-family: 'Syne', sans-serif; cursor: pointer; }
+    img { max-width: 100%; display: block; }
+
+    /* ─── LOADER ─── */
+    #loader {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #fff;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 2rem;
+      transition: opacity .5s ease .3s, visibility .5s ease .3s;
+    }
+    #loader.gone { opacity: 0; visibility: hidden; }
+    .loader-logo { max-width: 340px; width: 75%; }
+    .loader-bar { width: 200px; height: 2px; background: rgba(0,0,0,0.1); position: relative; overflow: hidden; }
+    .loader-bar::after {
+      content: ''; position: absolute; left: -100%; top: 0;
+      width: 100%; height: 100%; background: #000;
+      animation: load 1.2s ease forwards;
+    }
+    @keyframes load { to { left: 0; } }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      height: 70px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2.5rem;
+      background: rgba(245,243,239,0.97);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+    .nav-logo { height: 50px; display: flex; align-items: center; }
+    .nav-logo img { height: 100%; width: auto; object-fit: contain; }
+    .nav-menu { display: flex; gap: 2.5rem; list-style: none; }
+    .nav-menu a {
+      font-size: .75rem; letter-spacing: .15em; text-transform: uppercase;
+      color: #1a1a1a; transition: color .2s; font-weight: 600;
+    }
+    .nav-menu a:hover { color: var(--gold2); }
+    .nav-right { display: flex; gap: 1rem; align-items: center; }
+    .nav-cart {
+      position: relative; background: #000; border: 1px solid #000;
+      color: #fff; padding: .6rem 1.4rem;
+      font-size: .72rem; letter-spacing: .15em; text-transform: uppercase;
+      font-weight: 700; transition: all .2s;
+    }
+    .nav-cart:hover { background: var(--gold2); border-color: var(--gold2); }
+    .cart-badge {
+      position: absolute; top: -7px; right: -7px;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--red); color: #fff;
+      font-size: .65rem; display: none; align-items: center; justify-content: center;
+      font-weight: 700;
+    }
+    .cart-badge.on { display: flex; }
+
+    /* ─── HERO ─── */
+    #hero {
+      min-height: 80vh; padding: 7rem 2rem 4rem;
+      background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; text-align: center;
+    }
+    .hero-logo { max-width: 720px; width: 95%; margin-bottom: 2rem; }
+    .hero-tagline {
+      font-family: 'Bebas Neue'; font-size: clamp(1.2rem, 2vw, 1.6rem);
+      letter-spacing: .3em; color: #1a1a1a;
+      margin-bottom: 2.5rem;
+    }
+    .hero-ctas { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+    .btn-dark {
+      padding: 1rem 2.8rem; background: #000; color: #fff;
+      border: none; font-size: .8rem; font-weight: 700;
+      letter-spacing: .15em; text-transform: uppercase;
+      transition: background .2s, transform .15s;
+      display: inline-block; cursor: pointer;
+    }
+    .btn-dark:hover { background: var(--gold2); transform: translateY(-2px); }
+    .btn-outline-dark {
+      padding: 1rem 2.8rem; background: transparent; color: #000;
+      border: 1px solid #000;
+      font-size: .8rem; font-weight: 700; letter-spacing: .15em; text-transform: uppercase;
+      transition: all .2s; cursor: pointer;
+    }
+    .btn-outline-dark:hover { background: #000; color: #fff; }
+
+    /* ─── TICKER ─── */
+    .ticker {
+      background: #000; padding: .7rem 0; overflow: hidden;
+      border-top: 2px solid var(--gold); border-bottom: 2px solid var(--gold);
+    }
+    .ticker-track { display: flex; gap: 3rem; animation: scroll 20s linear infinite; white-space: nowrap; }
+    @keyframes scroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+    .ticker-item { font-family:'Bebas Neue'; font-size: 1rem; letter-spacing:.2em; color: var(--gold); }
+
+    /* ─── SECTIONS ─── */
+    .section { padding: 5rem 2.5rem; }
+    .section-header { margin-bottom: 3rem; text-align: center; }
+    .section-label { font-size:.7rem; letter-spacing:.3em; text-transform:uppercase; color:var(--gold); margin-bottom:.8rem; font-weight: 700; }
+    .section-title { font-family:'Bebas Neue'; font-size:clamp(2.5rem,5vw,4rem); letter-spacing:.05em; line-height:1; }
+
+    /* ─── CATALOGUE ─── */
+    #catalogue { background: var(--bg); }
+    .filters {
+      display: flex; gap: .5rem; margin-bottom: 2.5rem; flex-wrap: wrap; justify-content: center;
+    }
+    .filter-btn {
+      padding: .55rem 1.4rem; background: transparent;
+      border: 1px solid var(--border); color: var(--muted);
+      font-size: .72rem; letter-spacing: .12em; text-transform: uppercase;
+      transition: all .2s; font-weight: 500;
+    }
+    .filter-btn.active, .filter-btn:hover {
+      border-color: var(--gold); color: var(--gold);
+    }
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+      max-width: 1400px; margin: 0 auto;
+    }
+    .product-card {
+      background: var(--surface); position: relative;
+      border: 1px solid var(--border);
+      transition: border-color .25s, transform .25s;
+      display: flex; flex-direction: column;
+    }
+    .product-card:hover {
+      border-color: var(--gold);
+      transform: translateY(-3px);
+    }
+    .product-card.signature { border-color: var(--gold2); }
+    .product-thumb {
+      aspect-ratio: 1/1; position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      background: #000;
+    }
+    .product-thumb-bg { position: absolute; inset: 0; }
+    .product-thumb-icon { font-size: 7rem; opacity: .15; position: relative; z-index: 1; }
+    .product-thumb img {
+      width: 100%; height: 100%; object-fit: cover;
+      position: relative; z-index: 1;
+      transition: transform .4s ease;
+    }
+    .product-card:hover .product-thumb img { transform: scale(1.03); }
+    .product-badge-wrap { position: absolute; top: .8rem; left: .8rem; display: flex; gap: .4rem; z-index: 3; }
+    .badge {
+      padding: .3rem .7rem; font-size: .62rem;
+      letter-spacing: .15em; text-transform: uppercase; font-weight: 700;
+    }
+    .badge-new { background: var(--gold); color: var(--bg); }
+    .badge-hot { background: var(--red); color: #fff; }
+    .badge-signature { background: #000; color: var(--gold); border: 1px solid var(--gold); }
+
+    .stock-overlay {
+      position: absolute; inset: 0;
+      background: rgba(8,8,8,0.55);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2;
+    }
+    .stock-badge {
+      background: var(--red); color: #fff;
+      padding: .7rem 1.6rem;
+      font-family: 'Bebas Neue'; font-size: 1.1rem;
+      letter-spacing: .18em;
+      transform: rotate(-6deg);
+      border: 2px solid #fff;
+      box-shadow: 0 6px 20px rgba(0,0,0,.5);
+    }
+
+    .product-info { padding: 1.2rem; border-top: 1px solid var(--border); flex: 1; display: flex; flex-direction: column; }
+    .product-name { font-family:'Bebas Neue'; font-size:1.3rem; letter-spacing:.08em; }
+    .product-desc { font-size:.75rem; color:var(--muted); margin-top:.3rem; line-height:1.5; }
+    .product-price-row { display:flex; align-items:center; gap:.8rem; margin-top:.8rem; }
+    .price-now { font-size:1.15rem; font-weight:700; color:var(--gold); }
+    .price-was { font-size:.85rem; color:var(--muted); text-decoration:line-through; }
+    .variants { margin-top:.8rem; }
+    .variant-label { font-size:.65rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:.4rem; }
+    .size-row { display:flex; gap:.35rem; flex-wrap:wrap; margin-bottom:.4rem; }
+    .size-chip {
+      min-width:34px; height:30px; padding:0 .4rem;
+      border:1px solid var(--border); background:transparent;
+      color:var(--muted); font-size:.72rem;
+      transition:all .15s;
+    }
+    .size-chip.sel, .size-chip:hover { border-color:var(--gold); color:var(--gold); }
+    .color-row { display:flex; gap:.4rem; }
+    .color-dot {
+      width:22px; height:22px; border-radius:50%;
+      border:2px solid transparent; cursor:pointer;
+      transition:border-color .15s;
+    }
+    .color-dot.sel, .color-dot:hover { border-color:var(--gold); }
+    .card-actions { display:flex; gap:.5rem; margin-top:1rem; }
+    .btn-add-cart {
+      flex:1; padding:.75rem; background:transparent;
+      border:1px solid var(--gold); color:var(--gold);
+      font-size:.72rem; letter-spacing:.12em; text-transform:uppercase;
+      transition:all .2s; font-weight: 600;
+    }
+    .btn-add-cart:hover { background:var(--gold); color:var(--bg); }
+    .btn-buy-now {
+      padding:.75rem 1.1rem; background:var(--gold); color:var(--bg);
+      border:none; font-size:.72rem; letter-spacing:.12em; text-transform:uppercase;
+      transition:background .2s; font-weight: 700;
+    }
+    .btn-buy-now:hover { background:#d4b05a; }
+    .btn-notify {
+      width: 100%; padding: .9rem; margin-top: 1rem;
+      background: transparent; border: 1px solid var(--gold);
+      color: var(--gold); font-size: .72rem;
+      letter-spacing: .12em; text-transform: uppercase;
+      transition: all .2s; font-weight: 600;
+    }
+    .btn-notify:hover { background: var(--gold); color: var(--bg); }
+
+    /* ─── TRUST STRIP ─── */
+    #trust { background: var(--surface); border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+    .trust-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:2rem; padding:3rem 2.5rem; }
+    .trust-item { display:flex; flex-direction:column; align-items:center; text-align:center; gap:.6rem; }
+    .trust-icon { font-size:2rem; }
+    .trust-title { font-family:'Bebas Neue'; font-size:1.1rem; letter-spacing:.1em; }
+    .trust-text { font-size:.72rem; color:var(--muted); line-height:1.5; }
+
+    /* ─── CART DRAWER ─── */
+    .drawer-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,.7);
+      backdrop-filter:blur(4px); z-index:600;
+      opacity:0; pointer-events:none; transition:opacity .3s;
+    }
+    .drawer-overlay.on { opacity:1; pointer-events:all; }
+    .cart-drawer {
+      position:fixed; top:0; right:-480px; width:440px; max-width:100vw;
+      height:100%; background:var(--surface);
+      border-left:1px solid var(--border);
+      z-index:700; transition:right .35s ease;
+      display:flex; flex-direction:column;
+    }
+    .cart-drawer.on { right:0; }
+    .drawer-head {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:1.5rem; border-bottom:1px solid var(--border);
+    }
+    .drawer-title { font-family:'Bebas Neue'; font-size:1.5rem; letter-spacing:.1em; color:var(--gold); }
+    .drawer-close { background:none; border:none; color:var(--white); font-size:1.5rem; opacity:.5; transition:opacity .2s; }
+    .drawer-close:hover { opacity:1; }
+    .drawer-items { flex:1; overflow-y:auto; padding:1rem 1.5rem; }
+    .drawer-empty { text-align:center; color:var(--muted); padding:4rem 0; font-size:.9rem; }
+    .cart-line { display:flex; gap:1rem; padding:1rem 0; border-bottom:1px solid var(--border); }
+    .cart-line-thumb {
+      width:60px; height:60px; background:var(--surface2);
+      display:flex; align-items:center; justify-content:center;
+      font-size:2rem; flex-shrink:0;
+    }
+    .cart-line-info { flex:1; }
+    .cart-line-name { font-size:.88rem; font-weight:700; }
+    .cart-line-meta { font-size:.72rem; color:var(--muted); margin-top:.2rem; }
+    .cart-line-price { font-size:.9rem; color:var(--gold); margin-top:.3rem; }
+    .cart-line-rm { background:none; border:none; color:var(--muted); font-size:.85rem; align-self:center; transition:color .2s; }
+    .cart-line-rm:hover { color:#e55; }
+    .drawer-foot { padding:1.5rem; border-top:1px solid var(--border); }
+    .drawer-total { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem; }
+    .drawer-total-label { font-size:.8rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+    .drawer-total-val { font-size:1.3rem; font-weight:700; color:var(--gold); }
+    .btn-gold {
+      padding: .85rem 2.2rem; background: var(--gold); color: var(--bg);
+      border: none; font-size: .78rem; font-weight: 700;
+      letter-spacing: .12em; text-transform: uppercase;
+      transition: background .2s; cursor: pointer;
+    }
+    .btn-gold:hover { background: #d4b05a; }
+
+    /* ─── MODAL ─── */
+    .modal-wrap {
+      position:fixed; inset:0; z-index:800;
+      display:flex; align-items:center; justify-content:center;
+      padding:1rem;
+      background:rgba(0,0,0,.85); backdrop-filter:blur(8px);
+      opacity:0; pointer-events:none; transition:opacity .3s;
+    }
+    .modal-wrap.on { opacity:1; pointer-events:all; }
+    .modal {
+      background:var(--surface); width:100%; max-width:540px;
+      border:1px solid var(--border); max-height:90vh; overflow-y:auto;
+      transform:translateY(16px); transition:transform .3s;
+    }
+    .modal-wrap.on .modal { transform:translateY(0); }
+    .modal-head {
+      padding:1.5rem; border-bottom:1px solid var(--border);
+      display:flex; justify-content:space-between; align-items:center;
+      position:sticky; top:0; background:var(--surface); z-index:1;
+    }
+    .modal-title { font-family:'Bebas Neue'; font-size:1.5rem; letter-spacing:.1em; color:var(--gold); }
+    .modal-close { background:none; border:none; color:var(--white); font-size:1.4rem; opacity:.5; }
+    .modal-close:hover { opacity:1; }
+    .modal-body { padding:1.5rem; }
+    .checkout-summary {
+      background:var(--surface2); border:1px solid var(--border);
+      padding:1rem 1.2rem; margin-bottom:1.5rem;
+    }
+    .summary-line { display:flex; justify-content:space-between; font-size:.82rem; padding:.3rem 0; }
+    .summary-line.total {
+      border-top:1px solid var(--border); margin-top:.5rem; padding-top:.8rem;
+      font-weight:700; color:var(--gold); font-size:.95rem;
+    }
+    .field-group { margin-bottom:1rem; }
+    .field-label { font-size:.68rem; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:.4rem; display:block; }
+    .field-input {
+      width:100%; padding:.75rem 1rem;
+      background:#0f0f0f; border:1px solid var(--border); color:var(--white);
+      font-family:'Syne'; font-size:.88rem; outline:none;
+      transition:border-color .2s;
+    }
+    .field-input:focus { border-color:var(--gold); }
+    .field-row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .stripe-card-wrap {
+      padding:.75rem 1rem;
+      background:#0f0f0f; border:1px solid var(--border);
+      transition:border-color .2s;
+    }
+    .stripe-card-wrap.focused { border-color:var(--gold); }
+    .step-title {
+      font-family:'Bebas Neue'; font-size:1.1rem; letter-spacing:.08em;
+      color:var(--gold); margin:1.5rem 0 1rem;
+      padding-bottom:.5rem; border-bottom:1px solid var(--border);
+    }
+    .pay-btn {
+      width:100%; padding:1rem; background:var(--gold); color:var(--bg);
+      border:none; font-family:'Syne'; font-size:.85rem; font-weight:700;
+      letter-spacing:.15em; text-transform:uppercase;
+      margin-top:1.2rem; transition:background .2s;
+    }
+    .pay-btn:hover:not(:disabled) { background:#d4b05a; }
+    .pay-btn:disabled { opacity:.5; cursor:not-allowed; }
+    .pay-secure { text-align:center; font-size:.68rem; color:var(--muted); margin-top:.7rem; }
+    .pay-error { color:var(--red); font-size:.78rem; margin-top:.6rem; text-align:center; }
+    .success-wrap { padding:3rem 2rem; text-align:center; }
+    .success-icon { font-size:4rem; margin-bottom:1rem; }
+    .success-title { font-family:'Bebas Neue'; font-size:2.2rem; color:var(--gold); margin-bottom:.8rem; }
+    .success-text { font-size:.85rem; color:var(--muted); line-height:1.7; }
+    .success-order { display:inline-block; margin-top:1rem; padding:.5rem 1.2rem; border:1px solid var(--gold); color:var(--gold); font-size:.78rem; letter-spacing:.15em; }
+    .notify-modal-content { padding: 2rem; text-align: center; }
+    .notify-modal-content h3 {
+      font-family: 'Bebas Neue'; font-size: 1.8rem; color: var(--gold);
+      letter-spacing: .1em; margin-bottom: 1rem;
+    }
+    .notify-modal-content p {
+      color: var(--muted); font-size: .9rem; line-height: 1.6; margin-bottom: 1.5rem;
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      background:#fff;
+      padding:3rem 2.5rem; display:grid;
+      grid-template-columns:1fr 1fr 1fr; gap:2rem;
+    }
+    .footer-brand img { max-width: 220px; width: 100%; margin-bottom: 1rem; }
+    .footer-brand p { font-size:.75rem; color:#333; line-height:1.6; max-width:240px; }
+    .footer-col h4 { font-size:.7rem; letter-spacing:.2em; text-transform:uppercase; color:var(--gold2); margin-bottom:1rem; font-weight: 700; }
+    .footer-col ul { list-style:none; display:flex; flex-direction:column; gap:.5rem; }
+    .footer-col a { font-size:.78rem; color:#555; transition:color .2s; }
+    .footer-col a:hover { color:#000; }
+    .footer-bottom {
+      grid-column:1/-1; border-top:1px solid rgba(0,0,0,.1); padding-top:1.5rem;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .footer-copy { font-size:.7rem; color:#666; }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width:768px) {
+      nav { padding:0 1.2rem; height: 60px; }
+      .nav-logo { height: 38px; }
+      .nav-menu { display:none; }
+      #hero { padding: 6rem 1.5rem 3rem; min-height: 60vh; }
+      .section { padding:3.5rem 1.2rem; }
+      .products-grid { grid-template-columns: 1fr 1fr; gap: .8rem; }
+      .product-info { padding: .9rem; }
+      .product-name { font-size: 1.1rem; }
+      footer { grid-template-columns:1fr; }
+      .cart-drawer { width:100%; }
+      .field-row { grid-template-columns:1fr; }
+    }
+    @media (max-width:480px) {
+      .products-grid { grid-template-columns: 1fr; }
+    }
+
+    .reveal { opacity:0; transform:translateY(24px); transition:opacity .6s, transform .6s; }
+    .reveal.in { opacity:1; transform:translateY(0); }
+  </style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <img class="loader-logo" src="assets/logo-bestamr.jpg" alt="bestam'R"/>
+  <div class="loader-bar"></div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <img src="assets/logo-bestamr.jpg" alt="bestam'R"/>
+  </a>
+  <ul class="nav-menu">
+    <li><a href="#catalogue">Catalogue</a></li>
+    <li><a href="#trust">Livraison</a></li>
+    <li><a href="#footer">Contact</a></li>
+  </ul>
+  <div class="nav-right">
+    <button class="nav-cart" onclick="openDrawer()">
+      Panier <span class="cart-badge" id="cartBadge">0</span>
+    </button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <img class="hero-logo reveal" src="assets/logo-bestamr.jpg" alt="bestam'R"/>
+  <div class="hero-tagline reveal">Streetwear · Authentique · Édition Limitée</div>
+  <div class="hero-ctas reveal">
+    <a href="#catalogue" class="btn-dark">Voir le catalogue</a>
+    <a href="#trust" class="btn-outline-dark">Livraison</a>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-track" id="tickerTrack"></div>
+</div>
+
+<!-- CATALOGUE UNIFIÉ -->
+<section class="section" id="catalogue">
+  <div class="section-header reveal">
+    <div class="section-label">Collection 2025</div>
+    <h2 class="section-title">Catalogue</h2>
+  </div>
+  <div class="filters reveal" id="filters"></div>
+  <div class="products-grid" id="productsGrid"></div>
+</section>
+
+<!-- TRUST -->
+<section id="trust">
+  <div class="trust-grid">
+    <div class="trust-item reveal">
+      <div class="trust-icon">🚚</div>
+      <div class="trust-title">Livraison Directe</div>
+      <div class="trust-text">Expédié depuis nos entrepôts EU. Suivi en temps réel inclus.</div>
+    </div>
+    <div class="trust-item reveal">
+      <div class="trust-icon">🔒</div>
+      <div class="trust-title">Paiement Sécurisé</div>
+      <div class="trust-text">Stripe SSL + Apple Pay / Google Pay. Aucune donnée stockée.</div>
+    </div>
+    <div class="trust-item reveal">
+      <div class="trust-icon">↩️</div>
+      <div class="trust-title">30J Satisfait</div>
+      <div class="trust-text">Retour gratuit sous 30 jours si tu n'es pas satisfait.</div>
+    </div>
+    <div class="trust-item reveal">
+      <div class="trust-icon">🎯</div>
+      <div class="trust-title">Print on Demand</div>
+      <div class="trust-text">Fabriqué à la commande. Zéro surstock, zéro gaspillage.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer id="footer">
+  <div class="footer-brand">
+    <img src="assets/logo-bestamr.jpg" alt="bestam'R"/>
+    <p>Mode urbaine authentique. Chaque pièce est fabriquée à la demande par nos partenaires certifiés.</p>
+  </div>
+  <div class="footer-col">
+    <h4>Navigation</h4>
+    <ul>
+      <li><a href="#catalogue">Catalogue</a></li>
+      <li><a href="#trust">Livraison</a></li>
+      <li><a href="#">FAQ</a></li>
+    </ul>
+  </div>
+  <div class="footer-col">
+    <h4>Légal</h4>
+    <ul>
+      <li><a href="#">CGV</a></li>
+      <li><a href="#">Politique de retour</a></li>
+      <li><a href="#">Confidentialité</a></li>
+      <li><a href="#">Mentions légales</a></li>
+    </ul>
+  </div>
+  <div class="footer-bottom">
+    <span class="footer-copy">© 2025 bestam'R — Tous droits réservés</span>
+    <span class="footer-copy">Paiements sécurisés par Stripe 🔒</span>
+  </div>
+</footer>
+
+<!-- DRAWER OVERLAY -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+<!-- CART DRAWER -->
+<div class="cart-drawer" id="cartDrawer">
+  <div class="drawer-head">
+    <span class="drawer-title">Panier</span>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-items" id="drawerItems"></div>
+  <div class="drawer-foot" id="drawerFoot" style="display:none">
+    <div class="drawer-total">
+      <span class="drawer-total-label">Total estimé</span>
+      <span class="drawer-total-val" id="drawerTotal">0 €</span>
+    </div>
+    <button class="btn-gold" style="width:100%" onclick="openCheckout()">Commander →</button>
+    <p style="font-size:.68rem;color:var(--muted);text-align:center;margin-top:.6rem">Livraison calculée à l'étape suivante</p>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-wrap" id="modalWrap">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title" id="modalTitle">Finaliser la commande</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+const CONFIG = {
+  STRIPE_PK: 'pk_test_51Tagy0PFttVr0pIF9hKP0GmSo72ssTtxhCCbgPczLJEB2hmEw18MAN4cQFr1OwrB8VZE6Hmue1LPzWIlWNCGqcPY005p23501k',
+  API_BASE: '/.netlify/functions',
+  SHIPPING: 4.90,
+};
+
+const PRODUCTS = [
+  // SIGNATURE - RUPTURE
+  {
+    id:'cagoule-signature', name:'Cagoule Signature', category:'Signature',
+    image:'assets/cagoule-bestamr.jpg',
+    price:39.90, oldPrice:null,
+    desc:'Cagoule noire 1 trou, floquage logo bestam\'R. Polyester premium.',
+    badge:'signature',
+    sizes:['S/M','L/XL'],
+    colors:['#1a1a1a'],
+    outOfStock: true,
+  },
+  {
+    id:'masque-signature', name:'Masque Signature', category:'Signature',
+    image:'assets/masque-bestamr.jpg',
+    price:24.90, oldPrice:null,
+    desc:'Masque tissu jaune, floquage logo bestam\'R. Drop #1.',
+    badge:'signature',
+    sizes:['S/M','L/XL'],
+    colors:['#E5B800'],
+    outOfStock: true,
+  },
+  // GELATO - DISPONIBLES
+  {
+    id:'tshirt-signature', name:'T-Shirt Signature', category:'T-Shirts',
+    emoji:'👕', price:34.90, oldPrice:49.90,
+    desc:'Oversize 280g/m², 100% coton premium. Logo bestam\'R.',
+    badge:'hot', bg:'linear-gradient(135deg,#1a1008,#2a1a10)',
+    sizes:['XS','S','M','L','XL','XXL'],
+    colors:['#1a1a1a','#f2efe9','#8B6914'],
+    gelatoId:'tshirt-001',
+  },
+  {
+    id:'hoodie-premium', name:'Hoodie Premium', category:'Pulls',
+    emoji:'🥷', price:69.90, oldPrice:89.90,
+    desc:'Poche kangourou, capuche doublée. Logo brodé bestam\'R.',
+    badge:'new', bg:'linear-gradient(135deg,#100a18,#1a1025)',
+    sizes:['S','M','L','XL','XXL'],
+    colors:['#1a1a1a','#2a1a10'],
+    gelatoId:'hoodie-001',
+  },
+  {
+    id:'sweat-crewneck', name:'Sweat Col Rond', category:'Pulls',
+    emoji:'👔', price:54.90, oldPrice:null,
+    desc:'Coupe ample, 320g/m², coton bio. Logo central bestam\'R.',
+    badge:'new', bg:'linear-gradient(135deg,#15101a,#1f1828)',
+    sizes:['S','M','L','XL','XXL'],
+    colors:['#1a1a1a','#f2efe9'],
+    gelatoId:'sweat-001',
+  },
+  {
+    id:'bonnet-ribbed', name:'Bonnet Ribbed', category:'Bonnets',
+    emoji:'🧶', price:19.90, oldPrice:null,
+    desc:'Maille côtelée 100% acrylique. Logo brodé bestam\'R.',
+    badge:null, bg:'linear-gradient(135deg,#150a0a,#1f1010)',
+    sizes:['Unique'],
+    colors:['#1a1a1a','#8B6914','#f2efe9'],
+    gelatoId:'beanie-001',
+  },
+  {
+    id:'casquette-5panel', name:'Casquette 5-Panel', category:'Casquettes',
+    emoji:'🧢', price:24.90, oldPrice:34.90,
+    desc:'Structure rigide, broderie avant bestam\'R.',
+    badge:null, bg:'linear-gradient(135deg,#121008,#1a180a)',
+    sizes:['Unique'],
+    colors:['#1a1a1a','#f2efe9','#8B6914'],
+    gelatoId:'cap-001',
+  },
+  {
+    id:'tote-bag', name:'Tote Bag', category:'Accessoires',
+    emoji:'👜', price:16.90, oldPrice:null,
+    desc:'Coton bio 240g/m². Logo bestam\'R imprimé.',
+    badge:null, bg:'linear-gradient(135deg,#0f1208,#181a10)',
+    sizes:['Unique'],
+    colors:['#1a1a1a','#f2efe9'],
+    gelatoId:'tote-001',
+  },
+];
+
+let cart = [];
+let selectedVariants = {};
+PRODUCTS.forEach(p => { selectedVariants[p.id] = { size: p.sizes[0], color: 0 }; });
+
+// TICKER
+const tickerItems = ['BESTAM\'R OFFICIAL','★','STREETWEAR AUTHENTIQUE','★','ÉDITION LIMITÉE','★','LIVRAISON DIRECTE EU','★','PAIEMENT SÉCURISÉ','★'];
+const track = document.getElementById('tickerTrack');
+[...tickerItems, ...tickerItems].forEach(t => {
+  const s = document.createElement('span');
+  s.className = 'ticker-item'; s.textContent = t;
+  track.appendChild(s);
+});
+
+const categories = ['Tous', 'Signature', ...new Set(PRODUCTS.filter(p => p.category !== 'Signature').map(p => p.category))];
+let activeFilter = 'Tous';
+const filtersEl = document.getElementById('filters');
+const gridEl = document.getElementById('productsGrid');
+
+function renderFilters() {
+  filtersEl.innerHTML = categories.map(c =>
+    `<button class="filter-btn${c===activeFilter?' active':''}" onclick="setFilter('${c}')">${c}</button>`
+  ).join('');
+}
+
+function setFilter(cat) {
+  activeFilter = cat;
+  renderFilters();
+  renderProducts();
+}
+
+function renderProducts() {
+  const filtered = activeFilter === 'Tous' ? PRODUCTS : PRODUCTS.filter(p => p.category === activeFilter);
+  gridEl.innerHTML = filtered.map(p => {
+    const sv = selectedVariants[p.id];
+    const isSignature = p.category === 'Signature';
+    const isOOS = p.outOfStock;
+
+    const visualHTML = p.image
+      ? `<img src="${p.image}" alt="${p.name}"/>`
+      : `<div class="product-thumb-bg" style="background:${p.bg}"></div><div class="product-thumb-icon">${p.emoji}</div>`;
+
+    let badgeHTML = '';
+    if (p.badge === 'signature') badgeHTML = '<span class="badge badge-signature">Signature</span>';
+    else if (p.badge === 'new') badgeHTML = '<span class="badge badge-new">Nouveau</span>';
+    else if (p.badge === 'hot') badgeHTML = '<span class="badge badge-hot">🔥 Populaire</span>';
+
+    const overlayHTML = isOOS ? `
+      <div class="stock-overlay"><div class="stock-badge">Rupture de stock</div></div>` : '';
+
+    const actionsHTML = isOOS ? `
+      <button class="btn-notify" onclick="openNotify('${p.name}')">M'avertir au retour</button>
+    ` : `
+      <div class="card-actions">
+        <button class="btn-add-cart" onclick="addToCart('${p.id}')">+ Panier</button>
+        <button class="btn-buy-now" onclick="addToCart('${p.id}');openCheckout()">Acheter →</button>
+      </div>
+    `;
+
+    return `
+    <div class="product-card${isSignature?' signature':''}" id="card-${p.id}">
+      <div class="product-thumb">
+        ${visualHTML}
+        <div class="product-badge-wrap">${badgeHTML}</div>
+        ${overlayHTML}
+      </div>
+      <div class="product-info">
+        <div class="product-name">${p.name}</div>
+        <div class="product-desc">${p.desc}</div>
+        <div class="product-price-row">
+          <span class="price-now">${p.price.toFixed(2)} €</span>
+          ${p.oldPrice?`<span class="price-was">${p.oldPrice.toFixed(2)} €</span>`:''}
+        </div>
+        ${!isOOS ? `
+          <div class="variants">
+            <div class="variant-label">Taille</div>
+            <div class="size-row">
+              ${p.sizes.map((s,i)=>`<button class="size-chip${sv.size===s?' sel':''}" onclick="selectSize('${p.id}','${s}',this)">${s}</button>`).join('')}
+            </div>
+            <div class="variant-label" style="margin-top:.4rem">Couleur</div>
+            <div class="color-row">
+              ${p.colors.map((c,i)=>`<div class="color-dot${sv.color===i?' sel':''}" style="background:${c}" onclick="selectColor('${p.id}',${i},this)"></div>`).join('')}
+            </div>
+          </div>
+        ` : ''}
+        ${actionsHTML}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectSize(pid, size, btn) {
+  selectedVariants[pid].size = size;
+  document.querySelectorAll(`#card-${pid} .size-chip`).forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+function selectColor(pid, idx, el) {
+  selectedVariants[pid].color = idx;
+  document.querySelectorAll(`#card-${pid} .color-dot`).forEach(d => d.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+renderFilters();
+renderProducts();
+
+// CART
+function addToCart(pid) {
+  const p = PRODUCTS.find(x => x.id === pid);
+  if (p.outOfStock) return;
+  const sv = selectedVariants[pid];
+  cart.push({ ...p, cartId: Date.now() + Math.random(), size: sv.size, colorIdx: sv.color, colorHex: p.colors[sv.color] });
+  renderCart();
+  openDrawer();
+}
+function removeFromCart(cartId) {
+  cart = cart.filter(i => i.cartId !== cartId);
+  renderCart();
+}
+function cartTotal() { return cart.reduce((s,i) => s + i.price, 0); }
+
+function renderCart() {
+  const badge = document.getElementById('cartBadge');
+  const items = document.getElementById('drawerItems');
+  const foot = document.getElementById('drawerFoot');
+  const total = document.getElementById('drawerTotal');
+  badge.textContent = cart.length;
+  badge.classList.toggle('on', cart.length > 0);
+  if (!cart.length) {
+    items.innerHTML = '<div class="drawer-empty">Ton panier est vide 🛒</div>';
+    foot.style.display = 'none';
+    return;
+  }
+  foot.style.display = 'block';
+  total.textContent = cartTotal().toFixed(2) + ' €';
+  items.innerHTML = cart.map(i => `
+    <div class="cart-line">
+      <div class="cart-line-thumb">${i.emoji || '🎁'}</div>
+      <div class="cart-line-info">
+        <div class="cart-line-name">${i.name}</div>
+        <div class="cart-line-meta">${i.size} · <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${i.colorHex};vertical-align:middle"></span></div>
+        <div class="cart-line-price">${i.price.toFixed(2)} €</div>
+      </div>
+      <button class="cart-line-rm" onclick="removeFromCart(${i.cartId})">✕</button>
+    </div>
+  `).join('');
+}
+
+function openDrawer() { document.getElementById('cartDrawer').classList.add('on'); document.getElementById('drawerOverlay').classList.add('on'); }
+function closeDrawer() { document.getElementById('cartDrawer').classList.remove('on'); document.getElementById('drawerOverlay').classList.remove('on'); }
+
+// NOTIFY
+function openNotify(productName) {
+  document.getElementById('modalTitle').textContent = 'Alerte stock';
+  document.getElementById('modalBody').innerHTML = `
+    <div class="notify-modal-content">
+      <h3>${productName}</h3>
+      <p>Laisse ton email et nous t'enverrons une alerte dès que cette pièce est de nouveau disponible. <strong style="color:var(--gold)">Accès prioritaire garanti.</strong></p>
+      <div class="field-group">
+        <input class="field-input" type="email" id="notifyEmail" placeholder="ton@email.fr" />
+      </div>
+      <button class="btn-gold" style="width:100%" onclick="submitNotify('${productName}')">M'avertir au retour</button>
+      <p style="font-size:.7rem;color:var(--muted);margin-top:1rem">🔒 Email confidentiel — Désinscription en 1 clic</p>
+    </div>`;
+  document.getElementById('modalWrap').classList.add('on');
+}
+
+async function submitNotify(productName) {
+  const email = document.getElementById('notifyEmail').value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert('Email invalide'); return; }
+  try {
+    await fetch(`${CONFIG.API_BASE}/notify-stock`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, product: productName })
+    });
+  } catch (e) {}
+  document.getElementById('modalBody').innerHTML = `
+    <div class="notify-modal-content">
+      <div style="font-size:3rem;margin-bottom:1rem">✅</div>
+      <h3>C'est noté !</h3>
+      <p>Tu seras averti à <strong style="color:var(--gold)">${email}</strong> dès que le ${productName} sera de nouveau disponible.</p>
+      <button class="btn-gold" onclick="closeModal()">Fermer</button>
+    </div>`;
+}
+
+// CHECKOUT
+let stripe, cardElement;
+function openCheckout() {
+  if (!cart.length) return;
+  closeDrawer();
+  document.getElementById('modalTitle').textContent = 'Finaliser la commande';
+  renderCheckoutForm();
+  document.getElementById('modalWrap').classList.add('on');
+}
+function closeModal() { document.getElementById('modalWrap').classList.remove('on'); }
+
+function renderCheckoutForm() {
+  const subtotal = cartTotal();
+  const shipping = CONFIG.SHIPPING;
+  const total = subtotal + shipping;
+  document.getElementById('modalBody').innerHTML = `
+    <div class="checkout-summary">
+      ${cart.map(i => `
+        <div class="summary-line">
+          <span>${i.emoji || '🎁'} ${i.name} <small style="color:var(--muted)">(${i.size})</small></span>
+          <span>${i.price.toFixed(2)} €</span>
+        </div>
+      `).join('')}
+      <div class="summary-line"><span>Livraison EU</span><span>${shipping.toFixed(2)} €</span></div>
+      <div class="summary-line total"><span>Total</span><span>${total.toFixed(2)} €</span></div>
+    </div>
+    <div class="step-title">📍 Informations de livraison</div>
+    <div class="field-row">
+      <div class="field-group"><label class="field-label">Prénom</label><input class="field-input" id="fFirst" placeholder="Jean" /></div>
+      <div class="field-group"><label class="field-label">Nom</label><input class="field-input" id="fLast" placeholder="Dupont" /></div>
+    </div>
+    <div class="field-group"><label class="field-label">Email</label><input class="field-input" id="fEmail" type="email" placeholder="jean@exemple.fr" /></div>
+    <div class="field-group"><label class="field-label">Adresse</label><input class="field-input" id="fAddr" placeholder="12 rue de la Paix" /></div>
+    <div class="field-row">
+      <div class="field-group"><label class="field-label">Code postal</label><input class="field-input" id="fZip" placeholder="75001" /></div>
+      <div class="field-group"><label class="field-label">Ville</label><input class="field-input" id="fCity" placeholder="Paris" /></div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Pays</label>
+      <select class="field-input" id="fCountry">
+        <option value="FR">France</option><option value="BE">Belgique</option>
+        <option value="CH">Suisse</option><option value="CA">Canada</option><option value="LU">Luxembourg</option>
+      </select>
+    </div>
+    <div class="step-title">💳 Paiement sécurisé</div>
+    <div class="field-group"><label class="field-label">Numéro de carte</label><div class="stripe-card-wrap" id="cardEl"></div></div>
+    <button class="pay-btn" id="payBtn" onclick="submitPayment(${total})">🔒 Payer ${total.toFixed(2)} € en toute sécurité</button>
+    <p class="pay-secure">Paiement chiffré SSL via Stripe · Apple Pay & Google Pay acceptés</p>
+    <div class="pay-error" id="payError"></div>
+  `;
+  stripe = Stripe(CONFIG.STRIPE_PK);
+  const elements = stripe.elements({
+    appearance: { theme: 'night', variables: { colorPrimary: '#C9A84C', colorBackground: '#0f0f0f', fontFamily: 'Syne, sans-serif' } }
+  });
+  cardElement = elements.create('card', { hidePostalCode: true });
+  cardElement.mount('#cardEl');
+  cardElement.on('focus', () => document.getElementById('cardEl').classList.add('focused'));
+  cardElement.on('blur', () => document.getElementById('cardEl').classList.remove('focused'));
+}
+
+async function submitPayment(totalAmount) {
+  const btn = document.getElementById('payBtn');
+  const errEl = document.getElementById('payError');
+  errEl.textContent = '';
+  const fields = {
+    first: document.getElementById('fFirst').value.trim(),
+    last: document.getElementById('fLast').value.trim(),
+    email: document.getElementById('fEmail').value.trim(),
+    addr: document.getElementById('fAddr').value.trim(),
+    zip: document.getElementById('fZip').value.trim(),
+    city: document.getElementById('fCity').value.trim(),
+    country: document.getElementById('fCountry').value,
+  };
+  if (!fields.first || !fields.last || !fields.email || !fields.addr || !fields.zip || !fields.city) {
+    errEl.textContent = 'Merci de remplir tous les champs obligatoires.'; return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) {
+    errEl.textContent = 'Adresse email invalide.'; return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Traitement en cours...';
+  try {
+    const intentRes = await fetch(`${CONFIG.API_BASE}/create-payment-intent`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: Math.round(totalAmount * 100), currency: 'eur', customer: fields,
+        items: cart.map(i => ({ id: i.id, name: i.name, price: i.price, size: i.size })) })
+    });
+    const { clientSecret, error: intentError } = await intentRes.json();
+    if (intentError) throw new Error(intentError);
+    const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: { card: cardElement,
+        billing_details: { name: `${fields.first} ${fields.last}`, email: fields.email,
+          address: { line1: fields.addr, postal_code: fields.zip, city: fields.city, country: fields.country } } }
+    });
+    if (stripeError) throw new Error(stripeError.message);
+    await fetch(`${CONFIG.API_BASE}/confirm-order`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentIntentId: paymentIntent.id, customer: fields, items: cart })
+    });
+    showSuccess(fields, paymentIntent.id);
+  } catch (err) {
+    errEl.textContent = err.message || 'Erreur de paiement. Réessaie.';
+    btn.disabled = false;
+    btn.textContent = `🔒 Payer ${totalAmount.toFixed(2)} €`;
+  }
+}
+
+function showSuccess(fields, paymentId) {
+  const orderNum = 'BST-' + paymentId.slice(-8).toUpperCase();
+  document.getElementById('modalBody').innerHTML = `
+    <div class="success-wrap">
+      <div class="success-icon">✅</div>
+      <div class="success-title">Commande confirmée !</div>
+      <p class="success-text">Merci ${fields.first} ! Un email de confirmation a été envoyé à <strong>${fields.email}</strong>.</p>
+      <div class="success-order">#${orderNum}</div>
+      <p style="margin-top:1.2rem;padding:1rem;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);font-size:.8rem;color:var(--muted);line-height:1.6">
+        📦 Ta commande a été transmise automatiquement à notre fournisseur partenaire. Délai estimé : <strong>5 à 10 jours ouvrés</strong>.
+      </p>
+      <button class="btn-gold" style="margin-top:1.5rem" onclick="closeModal();cart=[];renderCart();">Retour à la boutique</button>
+    </div>`;
+  cart = [];
+  renderCart();
+}
+
+const obs = new IntersectionObserver(entries => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) setTimeout(() => e.target.classList.add('in'), i * 80);
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+window.addEventListener('load', () => {
+  setTimeout(() => document.getElementById('loader').classList.add('gone'), 1400);
+});
+</script>
+</body>
+</html>
